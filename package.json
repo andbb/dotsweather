@@ -5,7 +5,7 @@
     "name": "time-dots-wind",
     "pebble": {
         "capabilities": [
-            ""
+            "location"
         ],
         "displayName": "Time Dots Wind",
         "enableMultiJS": false,
@@ -16,13 +16,24 @@
         },
         "projectType": "native",
         "resources": {
-            "media": []
+            "media": [
+                {
+                    "file": "images/direction.png",
+                    "name": "IMAGE_DIRECTION",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/wind.png",
+                    "name": "IMAGE_WIND",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                }
+            ]
         },
         "sdkVersion": "3",
         "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk"
+            "basalt"
         ],
         "uuid": "751fca17-11b9-4e74-aadf-a2424f8a8454",
         "watchapp": {

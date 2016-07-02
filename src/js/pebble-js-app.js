@@ -30,12 +30,13 @@ function fetchWeather(latitude, longitude,speed,sp_deg) {
         var windspd = Math.round(response.wind.speed);
         var whead = headdir(response.wind.deg);
         var sphead = headdir(sp_deg);
-        
+        // speed=100*speed;
         console.log(temperature);
         console.log(icon);
         console.log(city);
         console.log('Log '+temperature + '\xB0C '+ windspd+' '+whead);
         console.log('Speed ' +speed+' '+sp_deg+' '+sphead+' ');
+        console.log('T ' + temperature + '\xB0C '+ windspd+''+whead,'Speed ', Math.round(speed*10)/10 +' '+sphead+' ');
         Pebble.sendAppMessage({
           'WEATHER_TEMPERATURE_KEY': temperature + '\xB0C '+ windspd+''+whead,
           'WEATHER_CITY_KEY': Math.round(speed*10)/10 +' '+sphead+' '
@@ -87,7 +88,9 @@ function locationSuccess(pos) {
 //  var savedCoordinates;
   var timediff;
   
-//  if ( typeof savedCoordinates == 'undefined' ) {
+    var mvmt=calcCrow(55.82578794865059,12.486526686709826,55.82564300066553,12.486526204934268);
+    console.log('Crow test mv',mvmt.d,mvmt.dist,mvmt.brng,mvmt.bearing);
+  //  if ( typeof savedCoordinates == 'undefined' ) {
   if (savedTime==-1){
     console.log('Initiation');
      savedTime=Date() ;
@@ -101,33 +104,55 @@ function locationSuccess(pos) {
 
   } else {
     var timex=Date();
-    console.log("Saved tdif1,time, [move] ", timediff,timex,savedTime,  savedCoordinates);
+    console.log("Saved old tdif1,time,savedtime, [savedcoord] ", timediff,timex,savedTime,  savedCoordinates);
     timediff = timex - savedTime;
     var one_day=1000*60*60*24 ;   
-    console.log("Saved tdif,time, [move] ", timediff,timex,savedTime,  savedCoordinates);
+    console.log("Saved new tdif,time,savedtime, [savedcoord]", timediff,timex,savedTime,  savedCoordinates);
     savedTime=Date();
     timediff=60;
+    console.log("Saved new tdif,time,savedtime, [savedcoord]", timediff,timex,savedTime,  savedCoordinates);
     var movement=calcCrow(savedCoordinates.latitude,savedCoordinates.longitude,coordinates.latitude, coordinates.longitude);
-    console.log("Crow mv",movement.d,movement.dist,movement.brng,movement.bearing);
+    console.log('Crow input',savedCoordinates.latitude,savedCoordinates.longitude,coordinates.latitude, coordinates.longitude);
+    console.log('Crow mv',movement.d,movement.dist,movement.brng,movement.bearing);
     savedCoordinates=coordinates;
     coordinates.speed=movement.dist/timediff;
     coordinates.heading=movement.bearing;
 
   }
   
-
    speed=coordinates.speed;
    heading=coordinates.heading;
 //  fetchWeather(coordinates.latitude, coordinates.longitude);
     console.log('Location');
-    console.log(coordinates);
-    console.log(savedCoordinates);
-    console.log(savedCoordinates.latitude, savedCoordinates.longitude,savedCoordinates.speed,savedCoordinates.heading);
-    console.log(coordinates.latitude, coordinates.longitude,coordinates.speed,coordinates.heading);
+    console.log('Coor',coordinates);
+    console.log('Saved coord',savedCoordinates);
+    console.log('Saved elements',savedCoordinates.latitude, savedCoordinates.longitude,savedCoordinates.speed,savedCoordinates.heading);
+    console.log('FW input',coordinates.latitude, coordinates.longitude,coordinates.speed,coordinates.heading);
     fetchWeather(coordinates.latitude, coordinates.longitude,coordinates.speed,coordinates.heading);
 }
 
 function calcCrow(lat1, lon1, lat2, lon2) 
+    {
+      var R = 6371e3; // metres
+      var phi1 = toRad(lat1);
+      var phi2 = toRad(lat2);
+      var dphi = toRad(lat2-lat1);
+      var dlambda = toRad(lon2-lon1);
+
+      var a = Math.sin(dphi/2) * Math.sin(dphi/2) +
+        Math.cos(phi1) * Math.cos(phi2) *
+        Math.sin(dlambda/2) * Math.sin(dlambda/2);
+      var c=2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+      var d = R * c;
+      var brng = toDeg(c);
+      console.log("Crow ",d,brng);
+      console.log("Crow2 ",lat1, lon1, lat2, lon2, d,brng,((brng + 360) % 360));
+      return {dist:d, bearing: ((brng + 270) % 360)};
+
+    }
+
+function oldcalcCrow(lat1, lon1, lat2, lon2) 
     {
       
 //NEBRASKA, USA (Latitude : 41.507483, longitude : -99.436554) and
@@ -137,7 +162,7 @@ function calcCrow(lat1, lon1, lat2, lon2)
       lat2= 38.504048;
       lon2=-98.315949;
 */      var R = 6371000; // m
-      R = 6371; // m
+//      R = 6371; // m
       var dLat = toRad(lat2-lat1);
       var dLon = toRad(lon2-lon1);
       lat1 = toRad(lat1);

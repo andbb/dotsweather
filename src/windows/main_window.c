@@ -17,6 +17,10 @@ enum WeatherKey {
   WEATHER_TEMPERATURE_KEY = 0x1,  // TUPLE_CSTRING
   WEATHER_CITY_KEY = 0x2,         // TUPLE_CSTRING
 };
+static const uint32_t WEATHER_ICONS[] = {
+  RESOURCE_ID_IMAGE_WIND, // 0
+  RESOURCE_ID_IMAGE_DIRECTION  , // 1
+};
 
 static void sync_error_callback(DictionaryResult dict_error, AppMessageResult app_message_error, void *context) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "App Message Sync Error: %d", app_message_error);
@@ -24,16 +28,17 @@ static void sync_error_callback(DictionaryResult dict_error, AppMessageResult ap
 
 static void sync_tuple_changed_callback(const uint32_t key, const Tuple* new_tuple, const Tuple* old_tuple, void* context) {
   switch (key) {
-/*    case WEATHER_ICON_KEY:
+    case WEATHER_ICON_KEY:
       if (s_icon_bitmap) {
         gbitmap_destroy(s_icon_bitmap);
       }
 
 //      s_icon_bitmap = gbitmap_create_with_resource(WEATHER_ICONS[new_tuple->value->uint8]);
+      s_icon_bitmap = gbitmap_create_with_resource(WEATHER_ICONS[1]);
       bitmap_layer_set_compositing_mode(s_icon_layer, GCompOpSet);
       bitmap_layer_set_bitmap(s_icon_layer, s_icon_bitmap);
       break;
-*/
+
     case WEATHER_TEMPERATURE_KEY:
       // App Sync keeps new_tuple in s_sync_buffer, so we may use it directly
     APP_LOG(APP_LOG_LEVEL_DEBUG, "WTK ");
@@ -163,17 +168,20 @@ static void window_load(Window *window) {
   s_icon_layer = bitmap_layer_create(GRect(0, 10, bounds.size.w, 80));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_icon_layer));
 
+  s_icon_layer = bitmap_layer_create(GRect(0, 10, bounds.size.w, 80));
+  layer_add_child(window_layer, bitmap_layer_get_layer(s_icon_layer));
+
   s_temperature_layer = text_layer_create(GRect(0, 58, bounds.size.w, 32));
   text_layer_set_text_color(s_temperature_layer, GColorWhite);
   text_layer_set_background_color(s_temperature_layer, GColorClear);
-  text_layer_set_font(s_temperature_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+  text_layer_set_font(s_temperature_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
   text_layer_set_text_alignment(s_temperature_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(s_temperature_layer));
 
   s_city_layer = text_layer_create(GRect(0, 90, bounds.size.w, 32));
   text_layer_set_text_color(s_city_layer, GColorWhite);
   text_layer_set_background_color(s_city_layer, GColorClear);
-  text_layer_set_font(s_city_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+  text_layer_set_font(s_city_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
   text_layer_set_text_alignment(s_city_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(s_city_layer));
   

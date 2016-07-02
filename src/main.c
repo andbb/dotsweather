@@ -12,8 +12,8 @@ static void tick_handler(struct tm *time_now, TimeUnits changed) {
 static void init() {
   main_window_push();
 
-//  tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
-  tick_timer_service_subscribe(10*SECOND_UNIT, tick_handler);
+  tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
+//  tick_timer_service_subscribe(10*SECOND_UNIT, tick_handler);
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Load");
 }
 
