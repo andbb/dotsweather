@@ -38,9 +38,18 @@ function fetchWeather(latitude, longitude,speed,sp_deg) {
         console.log('Speed ' +speed+' '+sp_deg+' '+sphead+' ');
         console.log('T ' + temperature + '\xB0C '+ windspd+''+whead,'Speed ', Math.round(speed*10)/10 +' '+sphead+' ');
         Pebble.sendAppMessage({
+          'WEATHER_TEMPERATURE_KEY': temperature*10,
+          'WIND_DIR_KEY': response.wind.deg,
+          'WIND_SPEED_KEY': windspd*100,
+          'DIR_KEY': speed*100,
+          'SPEED_DIR_KEY': sp_deg
+        });
+/*
+        Pebble.sendAppMessage({
           'WEATHER_TEMPERATURE_KEY': temperature + '\xB0C '+ windspd+''+whead,
           'WEATHER_CITY_KEY': Math.round(speed*10)/10 +' '+sphead+' '
         });
+*/        
       } else {
         
         console.log('Error');
@@ -94,7 +103,7 @@ function locationSuccess(pos) {
   if (savedTime==-1){
     console.log('Initiation');
      savedTime=Date() ;
-    timediff=1;
+    timediff=60;
     // It has not... perform the initialization
     savedCoordinates=coordinates;
     
@@ -103,14 +112,14 @@ function locationSuccess(pos) {
     console.log("No saved");
 
   } else {
-    var timex=Date();
+    var timex= +new Date();
     console.log("Saved old tdif1,time,savedtime, [savedcoord] ", timediff,timex,savedTime,  savedCoordinates);
-    timediff = timex - savedTime;
-    var one_day=1000*60*60*24 ;   
-    console.log("Saved new tdif,time,savedtime, [savedcoord]", timediff,timex,savedTime,  savedCoordinates);
-    savedTime=Date();
-    timediff=60;
-    console.log("Saved new tdif,time,savedtime, [savedcoord]", timediff,timex,savedTime,  savedCoordinates);
+    timediff = (timex - savedTime)/1000 ;
+//    var one_day=1000*60*60*24 ;   
+//    console.log("Saved new tdif,time,savedtime, [savedcoord]", timediff,timex,savedTime,  savedCoordinates);
+    savedTime=+new Date();
+//    timediff=60;
+//    console.log("Saved new tdif,time,savedtime, [savedcoord]", timediff,timex,savedTime,  savedCoordinates);
     var movement=calcCrow(savedCoordinates.latitude,savedCoordinates.longitude,coordinates.latitude, coordinates.longitude);
     console.log('Crow input',savedCoordinates.latitude,savedCoordinates.longitude,coordinates.latitude, coordinates.longitude);
     console.log('Crow mv',movement.d,movement.dist,movement.brng,movement.bearing);

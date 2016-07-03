@@ -6,21 +6,66 @@ static Layer *s_canvas;
 static int s_hours, s_minutes;
 static TextLayer *s_temperature_layer;
 static TextLayer *s_city_layer;
+//static RotBitmapLayer *s_icon_layer;
+//static RotBitmapLayer *s_wind_layer;
 static BitmapLayer *s_icon_layer;
+static BitmapLayer *s_wind_layer;
 static GBitmap *s_icon_bitmap = NULL;
-
+static GBitmap *s_wind_bitmap = NULL;
+static int dirdeg=0;
+static int winddeg=360;
 static AppSync s_sync;
 static uint8_t s_sync_buffer[64];
 
+enum WeatherKey {
+   WEATHER_TEMPERATURE_KEY= 0x0, // TUPLE_INT
+   WIND_DIR_KEY= 0x1,            // TUPLE_INT
+   WIND_SPEED_KEY= 0x2,          // TUPLE_INT
+   DIR_KEY= 0x3,                 // TUPLE_INT
+   SPEED_DIR_KEY= 0x            // TUPLE_INT
+};
+/*
 enum WeatherKey {
   WEATHER_ICON_KEY = 0x0,         // TUPLE_INT
   WEATHER_TEMPERATURE_KEY = 0x1,  // TUPLE_CSTRING
   WEATHER_CITY_KEY = 0x2,         // TUPLE_CSTRING
 };
+*/
+
 static const uint32_t WEATHER_ICONS[] = {
   RESOURCE_ID_IMAGE_WIND, // 0
   RESOURCE_ID_IMAGE_DIRECTION  , // 1
 };
+
+static const uint32_t WIND_ICONS[] = {
+  RESOURCE_ID_IMAGE_WIND_N, // 0
+  RESOURCE_ID_IMAGE_WIND_NE, // 1
+  RESOURCE_ID_IMAGE_WIND_E, // 2
+  RESOURCE_ID_IMAGE_WIND_SE, // 3
+  RESOURCE_ID_IMAGE_WIND_S, // 4
+  RESOURCE_ID_IMAGE_WIND_SW, // 5
+  RESOURCE_ID_IMAGE_WIND_W, // 6
+  RESOURCE_ID_IMAGE_WIND_NW, // 7
+};
+
+static const uint32_t DIRECTION_ICONS[] = {
+  RESOURCE_ID_IMAGE_DIR_N, // 0
+  RESOURCE_ID_IMAGE_DIR_NE, // 1
+  RESOURCE_ID_IMAGE_DIR_E, // 2
+  RESOURCE_ID_IMAGE_DIR_SE, // 3
+  RESOURCE_ID_IMAGE_DIR_S, // 4
+  RESOURCE_ID_IMAGE_DIR_SW, // 5
+  RESOURCE_ID_IMAGE_DIR_W, // 6
+  RESOURCE_ID_IMAGE_DIR_NW, // 7
+};
+
+int deg_to_brng(float dirdeg){
+  int brng;
+  brng=((dirdeg+22.5)/45);
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Icon bearing %i", brng);
+  return brng;
+}
 
 static void sync_error_callback(DictionaryResult dict_error, AppMessageResult app_message_error, void *context) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "App Message Sync Error: %d", app_message_error);
@@ -32,12 +77,34 @@ static void sync_tuple_changed_callback(const uint32_t key, const Tuple* new_tup
       if (s_icon_bitmap) {
         gbitmap_destroy(s_icon_bitmap);
       }
+      if (s_wind_bitmap) {
+        gbitmap_destroy(s_wind_bitmap);
+      }
+/*    
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Before rotation ");
+     rot_bitmap_set_compositing_mode(s_icon_layer, GCompOpSet);
+//      rot_bitmap_layer_increment_angle(s_icon_layer, 10);
+    rot_bitmap_layer_set_angle(s_icon_layer, 45 );
+    rot_bitmap_layer_set_angle(s_wind_layer, -45 );
+//      rot_bitmap_layer_increment_angle(s_wind_layer, -10);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "After rotation ");
+*/    
 
 //      s_icon_bitmap = gbitmap_create_with_resource(WEATHER_ICONS[new_tuple->value->uint8]);
-      s_icon_bitmap = gbitmap_create_with_resource(WEATHER_ICONS[1]);
+
+//      s_wind_bitmap = gbitmap_create_with_resource(WEATHER_ICONS[0]);
+
+      s_wind_bitmap = gbitmap_create_with_resource(WIND_ICONS[deg_to_brng(62)]);
+      bitmap_layer_set_compositing_mode(s_wind_layer, GCompOpSet);
+        //      rot_bitmap_layer_set_compositing_mode(s_wind_layer, GCompOpSet);
+      bitmap_layer_set_bitmap(s_wind_layer, s_wind_bitmap);
+      
+//      s_icon_bitmap = gbitmap_create_with_resource(WEATHER_ICONS[1]);
+      s_icon_bitmap = gbitmap_create_with_resource(DIRECTION_ICONS[deg_to_brng(262)]);
       bitmap_layer_set_compositing_mode(s_icon_layer, GCompOpSet);
       bitmap_layer_set_bitmap(s_icon_layer, s_icon_bitmap);
-      break;
+
+    break;
 
     case WEATHER_TEMPERATURE_KEY:
       // App Sync keeps new_tuple in s_sync_buffer, so we may use it directly
@@ -100,12 +167,20 @@ static void weather_window(void) {
   text_layer_set_font(s_city_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
   text_layer_set_text_alignment(s_city_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(s_city_layer));
-*/
+
   Tuplet initial_values[] = {
 //    TupletInteger(WEATHER_ICON_KEY, (uint8_t) 1),
     TupletCString(WEATHER_TEMPERATURE_KEY, "1234\u00B0C"),
     TupletCString(WEATHER_CITY_KEY, "St Pebblesburg"),
   };
+*/
+  Tuplet initial_values[] = {
+    TupletInteger(WEATHER_TEMPERATURE_KEY, (int16_t) 1),
+    TupletInteger(WIND_DIR_KEY, (int16_t) 1),
+    TupletInteger(WIND_SPEED_KEY, (int16_t) 1),
+    TupletInteger(DIR_KEY, (int16_t) 1),
+    TupletInteger(SPEED_DIR_KEY, (int16_t) 1)
+        };
 
   app_sync_init(&s_sync, s_sync_buffer, sizeof(s_sync_buffer),
       initial_values, ARRAY_LENGTH(initial_values),
@@ -163,36 +238,64 @@ static void window_load(Window *window) {
   GRect bounds = layer_get_bounds(window_layer);
 
   s_canvas = layer_create(bounds);
+
   layer_set_update_proc(s_canvas, layer_update_proc);
   layer_add_child(window_layer, s_canvas);
-  s_icon_layer = bitmap_layer_create(GRect(0, 10, bounds.size.w, 80));
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Define rotation ");
+
+
+//  s_icon_bitmap = gbitmap_create_with_resource(WEATHER_ICONS[0]);
+//  s_icon_layer = rot_bitmap_layer_create(s_icon_bitmap);
+
+  s_wind_layer = bitmap_layer_create(GRect(0, 30, bounds.size.w, 100));
+  layer_add_child(window_layer, bitmap_layer_get_layer(s_wind_layer));
+
+  s_icon_layer = bitmap_layer_create(GRect(0, 30, bounds.size.w, 100));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_icon_layer));
 
-  s_icon_layer = bitmap_layer_create(GRect(0, 10, bounds.size.w, 80));
-  layer_add_child(window_layer, bitmap_layer_get_layer(s_icon_layer));
+//  layer_add_child(window_layer,  bitmap_layer_get_layer((BitmapLayer *)s_icon_layer));
+        
+//  layer_add_child(window_layer, rot_bitmap_layer_get_layer(s_icon_layer));
 
-  s_temperature_layer = text_layer_create(GRect(0, 58, bounds.size.w, 32));
+//  s_wind_bitmap = gbitmap_create_with_resource(WEATHER_ICONS[1]);
+//  s_wind_layer = rot_bitmap_layer_create(s_wind_bitmap);
+  
+//  layer_add_child(window_layer,  bitmap_layer_get_layer((BitmapLayer *)s_wind_layer));
+
+//  layer_add_child(window_layer, bitmap_layer_get_layer(s_wind_layer));
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Rotation defined ");
+
+  s_temperature_layer = text_layer_create(GRect(0, 132, bounds.size.w, 32));
   text_layer_set_text_color(s_temperature_layer, GColorWhite);
   text_layer_set_background_color(s_temperature_layer, GColorClear);
   text_layer_set_font(s_temperature_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
   text_layer_set_text_alignment(s_temperature_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(s_temperature_layer));
 
-  s_city_layer = text_layer_create(GRect(0, 90, bounds.size.w, 32));
+  s_city_layer = text_layer_create(GRect(0, 100, bounds.size.w, 32));
   text_layer_set_text_color(s_city_layer, GColorWhite);
   text_layer_set_background_color(s_city_layer, GColorClear);
   text_layer_set_font(s_city_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
   text_layer_set_text_alignment(s_city_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(s_city_layer));
   
-  
+  /*
   Tuplet initial_values[] = {
     TupletInteger(WEATHER_ICON_KEY, (uint8_t) 1),
     TupletCString(WEATHER_TEMPERATURE_KEY, "1234\u00B0C"),
     TupletCString(WEATHER_CITY_KEY, "St Pebblesburg"),
   };
+  */
+    Tuplet initial_values[] = {
+    TupletInteger(WEATHER_ICON_KEY, (int16_t) 1),
+    TupletInteger(WEATHER_TEMPERATURE_KEY, (int16_t) 1),
+    TupletInteger(WIND_DIR_KEY, (int16_t) 1),
+    TupletInteger(WIND_SPEED_KEY, (int16_t) 1),
+    TupletInteger(DIR_KEY, (int16_t) 1),
+    TupletInteger(SPEED_DIR_KEY, (int16_t) 1)
+        };
 
-  app_sync_init(&s_sync, s_sync_buffer, sizeof(s_sync_buffer),
+   app_sync_init(&s_sync, s_sync_buffer, sizeof(s_sync_buffer),
       initial_values, ARRAY_LENGTH(initial_values),
       sync_tuple_changed_callback, sync_error_callback, NULL);
   APP_LOG(APP_LOG_LEVEL_DEBUG, "WLoad");
